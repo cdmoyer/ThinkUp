@@ -48,7 +48,7 @@ class TestOfMailer extends ThinkUpBasicUnitTestCase {
         }
     }
 
-    public function testFromName() {    
+    public function testFromName() {
         $config = Config::getInstance();
         $config->setValue("app_title_prefix", "My Crazy Custom ");
         $_SERVER['HTTP_HOST'] = "my_thinkup_hostname";
@@ -71,32 +71,16 @@ class TestOfMailer extends ThinkUpBasicUnitTestCase {
         $config = Config::getInstance();
         $config->setValue("app_title_prefix", "My Crazy Custom ");
         $config->setValue("mandrill_key", "1234567890");
-        $_SERVER['HTTP_HOST'] = "my_thinkup_hostname";
+        $_SERVER['HTTP_HOST'] = "thinkup.com";
         Mailer::mail('you@example.com', 'Testing 123', 'Me worky, yo?');
         $email_body = Mailer::getLastMail();
         $this->debug($email_body);
 
         // Exact JSON structure copied from Mandrill's site
-        $json = <<<json
-{
-    "key": "1234567890",
-    "message": {
-        "text": "Me worky, yo?",
-        "subject": "Testing 123",
-        "from_email": "notifications@my_thinkup_hostname",
-        "from_name": "My Crazy Custom ThinkUp",
-        "to": [
-            {
-                "email": "you@example.com",
-                "name": "you@example.com"
-            }
-        ]
-    }         
-}
-json;
-        
-        // Compare JSON string, ignoring whitespace differences
-        $this->assertTrue(json_encode(json_decode($json)) === $email_body);
+        $json = '{"text":"Me worky, yo?","subject":"Testing 123","from_email":"notifications@thinkup.com",'.
+        '"from_name":"My Crazy Custom ThinkUp","to":[{"email":"you@example.com","name":"you@example.com"}]}';
 
+        // Compare JSON string, ignoring whitespace differences
+        $this->assertEqual($json, $email_body);
     }
 }
