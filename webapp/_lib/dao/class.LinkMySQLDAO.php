@@ -53,9 +53,9 @@ class LinkMySQLDAO extends PDODAO implements LinkDAO {
         $vars = array(
             ':url'=>$url,
             ':expanded'=>$expanded,
-            ':title'=>$title,
-            ':description'=>$description,
-            ':image_src'=>$image_src
+            ':title'=>(isset($title)?$title:''),
+            ':description'=>(isset($description)?$description:''),
+            ':image_src'=>(isset($image_src)?$image_src:'')
         );
         $q  = "UPDATE #prefix#links ";
         $q .= "SET expanded_url=:expanded, title=:title, description = :description , image_src=:image_src ";
