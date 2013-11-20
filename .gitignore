@@ -21,6 +21,9 @@ build/
 webapp/test_installer/*
 webapp/plugins/twitterrealtime/streaming/*.pid
 
+# Smarty templates
+webapp/data/compiled_view/*
+
 # Plugins except for core plugins
 webapp/plugins/*
 !webapp/plugins/expandurls/
