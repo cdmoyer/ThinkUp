@@ -36,11 +36,9 @@ class ThinkUpTestDatabaseHelper extends PDODAO {
      * Create ThinkUp tables
      */
     public function create($script_path) {
-        $error_reporting = error_reporting(); // save old reporting setting
-        error_reporting(22527); //Don't show E_DEPRECATED PHP messages, split() is deprecated
         //Create all the tables based on the build script
         $create_db_script = file_get_contents($script_path);
-        $create_statements = split(";", $create_db_script);
+        $create_statements = explode(";", $create_db_script);
         foreach ($create_statements as $q) {
             if (trim($q) != '') {
                 if (self::$prefix != 'tu_') {
@@ -49,7 +47,6 @@ class ThinkUpTestDatabaseHelper extends PDODAO {
                 self::execute($q);
             }
         }
-        error_reporting( $error_reporting ); // reset error reporting
     }
 
     /**

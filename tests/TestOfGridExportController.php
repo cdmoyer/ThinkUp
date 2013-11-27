@@ -84,7 +84,7 @@ class TestOfGridExportController extends ThinkUpUnitTestCase {
         $controller->control();
         $results = ob_get_contents();
         ob_end_clean();
-        $data = split("\n", $results);
+        $data = explode("\n", $results);
         $this->assertEqual(3, count($data), 'we should have three lines, one blank');
         $value = str_getcsv($data[0]);
         $this->assertEqual($value[0], 'value1');
