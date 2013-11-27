@@ -95,7 +95,7 @@ class FacebookCrawler {
             if ($network == 'facebook page' && isset($user_details->likes) && !$this->page_like_count_set) {
                 $count_dao = DAOFactory::getDAO('CountHistoryDAO');
                 $count_dao->insert($this->instance->network_user_id, 'facebook page', $user_details->likes, null,
-                'followers');
+                  'followers');
                 $this->page_like_count_set = true;
             }
 
@@ -146,6 +146,7 @@ class FacebookCrawler {
     public function fetchPostsAndReplies() {
         $id = $this->instance->network_user_id;
         $network = $this->instance->network;
+
 
         // fetch user's friends
         $this->storeFriends();
@@ -237,16 +238,15 @@ class FacebookCrawler {
                 $profiles[$p->from->id] = $profile;
             }
 
-            //Assume profile comments are private and page posts are public
+            // Assume profile comments are private and page posts are public
             $is_protected = ($network=='facebook')?1:0;
-            //Get likes count
+
+            // Get likes count
             $likes_count = 0;
+            // Normalize likes to be one array
             if (isset($p->likes)) {
-                if (is_int($p->likes)) {
-                    $likes_count = $p->likes;
-                } elseif (isset($p->likes->count) && is_int($p->likes->count) ) {
-                    $likes_count = $p->likes->count;
-                }
+                $p->likes = $this->normalizeLikes($p->likes);
+                $likes_count = $p->likes->count;
             }
 
             // Normalize comments to be one array
@@ -254,7 +254,7 @@ class FacebookCrawler {
 
             $post_in_storage = $post_dao->getPost($post_id, $network);
 
-            //Figure out if we have to process likes and comments
+            // Figure out if we have to process likes and comments
             if (isset($post_in_storage)) {
                 $this->logger->logInfo("Post ".$post_id. " already in storage", __METHOD__.','.__LINE__);
                 if ($post_in_storage->favlike_count_cache >= $likes_count) {
@@ -711,6 +711,42 @@ class FacebookCrawler {
             }
             else {
                 $comments = null;
+            }
+        }
+        return $output;
+    }
+
+    /**
+     * Take a list of likes from a page or a post, run through pagination
+     * and add a count member to the object
+     * @param  object $likes Likes Object structure from Facebook API
+     * @return object
+     */
+    private function normalizeLikes($likes)
+    {
+        $output = (object) array('count' => 0, 'data' => array());
+        // Just in case we get an object with the legacy layout
+        if (!isset($likes->data)) {
+            if (is_int($likes)) {
+                $output->count = $likes;
+            }
+            elseif (is_object($likes) && isset($likes->count) && is_int($likes->count)) {
+                $output->count = $likes->count;
+            }
+            return $output;
+        }
+
+        while ($likes !== null) {
+            foreach ($likes->data as $like) {
+                $output->data[] = $like;
+                $output->count++;
+            }
+            if (!empty($likes->paging->next)) {
+               $next_url = $likes->paging->next . '&access_token=' . $this->access_token;
+               $likes = FacebookGraphAPIAccessor::rawApiRequest($next_url);
+            }
+            else {
+                $likes = null;
             }
         }
         return $output;

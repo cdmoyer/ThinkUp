@@ -72,6 +72,7 @@ class TestOfFacebookCrawler extends ThinkUpUnitTestCase {
         'earliest_post_in_system'=>'2009-01-01 13:48:05', 'favorites_profile' => '0'
         );
         $this->profile2_instance = new Instance($r);
+       
 
         $r = array('id'=>3, 'network_username'=>'Mark Linford', 'network_user_id'=>'7568536355',
         'network_viewer_id'=>'729597743', 'last_post_id'=>'0',
@@ -108,6 +109,12 @@ class TestOfFacebookCrawler extends ThinkUpUnitTestCase {
         'earliest_post_in_system'=>'2009-01-01 13:48:05', 'favorites_profile' => '0'
         );
         $this->profile3_instance = new Instance($r);
+
+        $r['id'] = 6;
+        $r['network_username'] = 'Chris Moyer';
+        $r['network_user_id'] = '501771984';
+        $r['network_viewer_id'] = '501771984';
+        $this->profile5_instance = new Instance($r);
     }
 
     public function tearDown() {
@@ -164,7 +171,7 @@ class TestOfFacebookCrawler extends ThinkUpUnitTestCase {
 
         $post = $post_dao->getPost('10151848164181985', 'facebook');
         $this->assertEqual($post->post_text,
-        'Britney Glee episode tonight. I may explode into a million pieces, splattered all over my living room walls.');
+          'Britney Glee episode tonight. I may explode into a million pieces, splattered all over my living room walls.');
         $this->assertEqual($post->reply_count_cache, 31);
         $this->assertTrue($post->is_protected);
         $this->assertEqual($post->favlike_count_cache, 3);
@@ -333,5 +340,14 @@ class TestOfFacebookCrawler extends ThinkUpUnitTestCase {
         $post_dao = new PostMySQLDAO();
         $post = $post_dao->getPost('775180192497884', 'facebook page');
         $this->assertEqual($post->reply_count_cache, 51);
+    }
+
+    public function testPaginatedPostLikes() {
+        $fbc = new FacebookCrawler($this->profile5_instance, 'fauxaccesstoken', 10);
+
+        $fbc->fetchPostsAndReplies('501771984', 'facebook');
+        $post_dao = new PostMySQLDAO();
+        $post = $post_dao->getPost('10151734003261985', 'facebook');
+        $this->assertEqual($post->favlike_count_cache, 27);
     }
 }
