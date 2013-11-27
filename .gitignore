@@ -13,6 +13,7 @@ extras/scripts/lic_header.py
 
 # Temp data
 data/
+webapp/data
 !tests/data
 !webapp/data/README.md
 
@@ -20,9 +21,6 @@ data/
 build/
 webapp/test_installer/*
 webapp/plugins/twitterrealtime/streaming/*.pid
-
-# Smarty templates
-webapp/data/compiled_view/*
 
 # Plugins except for core plugins
 webapp/plugins/*
