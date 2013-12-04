@@ -69,13 +69,11 @@ class TestOfInsightsGeneratorPluginConfigurationController extends ThinkUpUnitTe
         $controller = $this->getController(true, false);
         $output = $controller->go();
         $this->assertNoPattern('/Mandrill Template Name/', $output);
-        $this->assertPattern('/Insight Email Frequency/', $output);
 
-        // Admin gets both options
+        // Admin gets option
         $controller = $this->getController(true, true);
         $output = $controller->go();
         $this->assertPattern('/Mandrill Template Name/', $output);
-        $this->assertPattern('/Insight Email Frequency/', $output);
     }
 
     public function tearDown() {

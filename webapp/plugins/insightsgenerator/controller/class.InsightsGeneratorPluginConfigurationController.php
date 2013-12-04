@@ -46,22 +46,9 @@ class InsightsGeneratorPluginConfigurationController extends PluginConfiguration
         $installed_plugins = $this->getInstalledInsightPlugins();
         $this->addToView('installed_plugins', $installed_plugins);
 
-        // Email Frequency
-        $email_frequency_field = array('name' => 'email_frequency', 'label' => 'Insight Email Frequency');
-        $email_frequency_field['values'] = array(
-            'No Email' => 'none',
-            'Daily' => 'daily',
-            'Weekly' => 'weekly',
-            'Both' => 'both',
-        );
-        $email_frequency_field['default_value'] = '';
-        $this->addPluginOption(self::FORM_SELECT_ELEMENT, $email_frequency_field);
-
-        if ($this->isAdmin()) {
-            $mandrill_template = array('name' => 'mandrill_template', 'label' => 'Mandrill Template Name',
-            'advanced' => true);
-            $this->addPluginOption(self::FORM_TEXT_ELEMENT, $mandrill_template);
-        }
+        $mandrill_template = array('name' => 'mandrill_template', 'label' => 'Mandrill Template Name',
+        'advanced' => true);
+        $this->addPluginOption(self::FORM_TEXT_ELEMENT, $mandrill_template);
 
         return $this->generateView();
     }
