@@ -327,16 +327,16 @@ SQL;
 
     /**
      * Update an owner's notification frequency
-     * @param int $id Owner to update
+     * @param string $email Owner to update
      * @param string $frequency One of daily, weekly, never, both
      * @return int Count of affected rows
      */
-    public function setNotificationFrequency($id, $notification_frequency) {
+    public function setNotificationFrequency($email, $notification_frequency) {
         $q = "UPDATE #prefix#owners
              SET notification_frequency=:notification_frequency
-             WHERE id=:id";
+             WHERE email=:email";
         if ($this->profiler_enabled) { Profiler::setDAOMethod(__METHOD__); }
-        $stmt = $this->execute($q, array(':notification_frequency' => $notification_frequency, ':id' => $id));
+        $stmt = $this->execute($q, array(':notification_frequency' => $notification_frequency, ':email' => $email));
         return $this->getUpdateCount($stmt);
     }
 

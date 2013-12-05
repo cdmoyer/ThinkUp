@@ -280,7 +280,7 @@ class TestOfOwnerMySQLDAO extends ThinkUpUnitTestCase {
     public function testSetNotificationFrequency() {
         $existing_owner = $this->DAO->getByEmail('ttuser@example.com');
         $this->assertEqual('both', $existing_owner->notification_frequency);
-        $this->DAO->setNotificationFrequency($existing_owner->id, 'daily');
+        $this->DAO->setNotificationFrequency($existing_owner->email, 'daily');
 
         $existing_owner = $this->DAO->getByEmail('ttuser@example.com');
         $this->assertEqual('daily', $existing_owner->notification_frequency);
