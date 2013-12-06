@@ -28,23 +28,146 @@
  * @copyright 2012-2013 Gina Trapani
  */
 
-require_once 'tests/init.tests.php';
-require_once THINKUP_ROOT_PATH.'webapp/_lib/extlib/simpletest/autorun.php';
-require_once THINKUP_ROOT_PATH.'webapp/config.inc.php';
-require_once THINKUP_ROOT_PATH.'tests/classes/class.ThinkUpBasicUnitTestCase.php';
-require_once THINKUP_ROOT_PATH. 'webapp/plugins/InsightsGenerator/model/class.InsightsGeneratorPlugin.php';
+require_once dirname(__FILE__) . '/../../../../tests/init.tests.php';
+require_once THINKUP_WEBAPP_PATH.'_lib/extlib/simpletest/autorun.php';
+require_once THINKUP_WEBAPP_PATH.'_lib/extlib/simpletest/web_tester.php';
+require_once THINKUP_WEBAPP_PATH.'plugins/insightsgenerator/model/class.InsightsGeneratorPlugin.php';
+require_once THINKUP_WEBAPP_PATH.'plugins/insightsgenerator/model/class.InsightPluginParent.php';
 
 class TestOfInsightsGeneratorPlugin extends ThinkUpUnitTestCase {
 
     public function setUp(){
         parent::setUp();
-        $webapp = Webapp::getInstance();
-        $webapp->registerPlugin('InsightsGenerator', 'InsightsGeneratorPlugin');
-        $webapp->setActivePlugin('InsightsGenerator');
     }
 
     public function tearDown() {
         parent::tearDown();
+    }
+
+    public function testNeverSendSetting() {
+        unlink(FileDataManager::getDataPath(Mailer::EMAIL));
+        $builders = array();
+        $builders[] = FixtureBuilder::build('owners', array('id'=>1, 'full_name'=>'ThinkUp J. User',
+        'email'=>'never@example.com', 'is_activated'=>1, 'notification_frequency' => 'never'));
+        $builders[] = FixtureBuilder::build('owner_instances', array('owner_id'=>1, 'instance_id'=>5, 'auth_error'=>''));
+        $builders[] = FixtureBuilder::build('instances', array('network_username'=>'cdmoyer', 'id' => 5, 
+        'network'=>'twitter', 'is_activated'=>1, 'is_public'=>1));
+
+        $this->simulateLogin('never@example.com');
+        // Should not send or set options with a 'never' instance
+        $plugin = new InsightsGeneratorPlugin();
+        $plugin->crawl();
+
+        $sent = Mailer::getLastMail();
+        $this->assertEqual('', $sent);
+
+        $plugin_option_dao = DAOFactory::GetDAO('PluginOptionDAO');
+        $options = $plugin_option_dao->getOptionsHash($plugin->folder_name, true);
+        $this->assertEqual(count($options), 0);
+        $plugin->crawl();
+        $sent = Mailer::getLastMail();
+        $this->assertEqual('', $sent);
+
+        $plugin_dao = DAOFactory::getDAO('PluginDAO');
+        $plugin_id = $plugin_dao->getPluginId($plugin->folder_name);
+        $plugin_option_dao->insertOption($plugin_id, 'last_daily_email', date('Y-m-d', strtotime('last year')));
+        $plugin_option_dao->insertOption($plugin_id, 'last_weekly_email', date('Y-m-d', strtotime('last year')));
+        $options = $plugin_option_dao->getOptionsHash($plugin->folder_name, true);
+        $this->assertEqual(count($options), 2);
+
+        // Should not send with dates and 'never'
+        $plugin->crawl();
+        $sent = Mailer::getLastMail();
+        $this->assertEqual('', $sent);
+    }
+
+    public function testDailySendSetting() {
+        unlink(FileDataManager::getDataPath(Mailer::EMAIL));
+        $builders = array();
+        $builders[] = FixtureBuilder::build('owners', array('id'=>1, 'full_name'=>'ThinkUp J. User',
+        'email'=>'daily@example.com', 'is_activated'=>1, 'notification_frequency' => 'daily'));
+        $builders[] = FixtureBuilder::build('owner_instances', array('owner_id'=>1, 'instance_id'=>5, 'auth_error'=>''));
+        $builders[] = FixtureBuilder::build('instances', array('network_username'=>'cdmoyer', 'id' => 5, 
+        'network'=>'twitter', 'is_activated'=>1, 'is_public'=>1));
+        $builders[] = FixtureBuilder::build('insights', array('id'=>1, 'instance_id'=>5, 
+        'slug'=>'new_group_memberships', 'prefix'=>'Made the List:',
+        'text'=>'CDMoyer is on 29 new lists', 'time_generated'=>date('Y-m-d 03:00:00')));
+
+        $plugin_option_dao = DAOFactory::GetDAO('PluginOptionDAO');
+        $options = $plugin_option_dao->getOptionsHash($plugin->folder_name, true);
+        $this->assertEqual(count($options), 0);
+
+        $this->simulateLogin('daily@example.com');
+        $plugin = new InsightsGeneratorPlugin();
+        $plugin->current_timestamp = strtotime('5pm');
+        $plugin->crawl();
+
+        $options = $plugin_option_dao->getOptionsHash($plugin->folder_name, true);
+        $this->assertEqual(count($options), 1, 'Just last_daily_email set');
+        $this->assertNotNull($options['last_daily_email'], 'Just last_daily_email set');
+        $this->assertNull($options['last_weekly_email'], 'Just last_daily_email set');
+        $sent = Mailer::getLastMail();
+        $this->assertNotEqual('', $sent);
+        $this->assertPattern('/to.*daily@example.com/', $sent);
+        $this->assertPattern('/29 new lists/', $sent);
+
+
+        unlink(FileDataManager::getDataPath(Mailer::EMAIL));
+        $plugin->crawl();
+        $sent = Mailer::getLastMail();
+        $this->assertEqual('', $sent, 'Should not send again same day');
+    }
+
+    public function testWeeklySendSetting() {
+        $plugin = new InsightsGeneratorPlugin();
+        $day_to_run = date('D', strtotime("Sunday +".$plugin::WEEKLY_DIGEST_DAY_OF_WEEK." days"));
+        $day_not_to_run = date('D', strtotime("Sunday +".(($plugin::WEEKLY_DIGEST_DAY_OF_WEEK+1)%6)." days"));
+
+        $builders = array();
+        $builders[] = FixtureBuilder::build('owners', array('id'=>1, 'full_name'=>'ThinkUp J. User',
+        'email'=>'weekly@example.com', 'is_activated'=>1, 'notification_frequency' => 'weekly'));
+        $builders[] = FixtureBuilder::build('owner_instances', array('owner_id'=>1, 'instance_id'=>5, 'auth_error'=>''));
+        $builders[] = FixtureBuilder::build('instances', array('network_username'=>'cdmoyer', 'id' => 5, 
+        'network'=>'twitter', 'is_activated'=>1, 'is_public'=>1));
+        $builders[] = FixtureBuilder::build('insights', array('id'=>1, 'instance_id'=>5, 
+        'slug'=>'new_group_memberships', 'prefix'=>'Made the List:',
+        'text'=>'CDMoyer is on 29 new lists',
+        'time_generated'=>date('Y-m-d 03:00:00', strtotime($day_to_run.' 5pm')-(60*60*24*3))));
+
+
+        $plugin_option_dao = DAOFactory::GetDAO('PluginOptionDAO');
+        $options = $plugin_option_dao->getOptionsHash($plugin->folder_name, true);
+        $this->assertEqual(count($options), 0);
+
+        $this->simulateLogin('weekly@example.com');
+
+        $plugin->current_timestamp = strtotime($day_not_to_run.' 5pm');
+        unlink(FileDataManager::getDataPath(Mailer::EMAIL));
+        $plugin->crawl();
+        $sent = Mailer::getLastMail();
+        $this->assertEqual('', $sent, 'Should not send on '.$day_not_to_run);
+
+        $plugin->current_timestamp = strtotime($day_to_run.' 5pm');
+        $plugin->crawl();
+
+        $options = $plugin_option_dao->getOptionsHash($plugin->folder_name, true);
+        $this->assertEqual(count($options), 1, 'Just last_weekly_email set');
+        $this->assertNotNull($options['last_weekly_email'], 'Just last_weekly_email set');
+        $this->assertNull($options['last_daily_email'], 'Just last_weekly_email set');
+        $sent = Mailer::getLastMail();
+        $this->assertNotEqual('', $sent);
+        $this->assertPattern('/to.*weekly@example.com/', $sent);
+        $this->assertPattern('/29 new lists/', $sent);
+
+
+        unlink(FileDataManager::getDataPath(Mailer::EMAIL));
+        $plugin->crawl();
+        $sent = Mailer::getLastMail();
+        $this->assertEqual('', $sent, 'Should not send again same day');
+    }
+
+    public function testBothSendSetting() {
+        //TODO
     }
 
 }
