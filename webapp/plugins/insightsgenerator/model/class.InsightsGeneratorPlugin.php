@@ -102,7 +102,7 @@ class InsightsGeneratorPlugin extends Plugin implements CrawlerPlugin {
             $options = $plugin_option_dao->getOptionsHash($this->folder_name, true);
             $plugin_dao = DAOFactory::getDAO('PluginDAO');
             $plugin_id = $plugin_dao->getPluginId($this->folder_name);
-            $today = date('Y-m-d');
+            $today = date('Y-m-d', $this->current_timestamp);
 
             $last_daily = isset($options['last_daily_email']) ? $options['last_daily_email']->option_value : null;
             if ($last_daily != $today && in_array($current_owner->notification_frequency, array('daily','both'))) {
