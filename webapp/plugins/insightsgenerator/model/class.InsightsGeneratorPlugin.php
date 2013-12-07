@@ -97,7 +97,7 @@ class InsightsGeneratorPlugin extends Plugin implements CrawlerPlugin {
         }
 
         // Send Email digets the first run after 4am
-        if (date('H', $this->current_timestamp) > 4) {
+        if ((int)date('G', $this->current_timestamp) >= 4) {
             $plugin_option_dao = DAOFactory::GetDAO('PluginOptionDAO');
             $options = $plugin_option_dao->getOptionsHash($this->folder_name, true);
             $plugin_dao = DAOFactory::getDAO('PluginDAO');
