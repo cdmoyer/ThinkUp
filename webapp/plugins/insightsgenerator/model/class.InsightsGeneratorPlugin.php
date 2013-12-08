@@ -96,6 +96,11 @@ class InsightsGeneratorPlugin extends Plugin implements CrawlerPlugin {
             $instance->network, __METHOD__.','.__LINE__);
         }
 
+        // Don't do email for regular users
+        if (!$current_owner->is_admin) {
+            return;
+        }
+
         // Send Email digets the first run after 4am
         if ((int)date('G', $this->current_timestamp) >= 4) {
             $plugin_option_dao = DAOFactory::GetDAO('PluginOptionDAO');
@@ -104,25 +109,48 @@ class InsightsGeneratorPlugin extends Plugin implements CrawlerPlugin {
             $plugin_id = $plugin_dao->getPluginId($this->folder_name);
             $today = date('Y-m-d', $this->current_timestamp);
 
+            // Translate from a list of instances to a list of owners
+            $owner_instance_dao = DAOFactory::getDAO('OwnerInstanceDAO');
+            $current_owner = $owner_dao->getByEmail(Session::getLoggedInUser());
+            $owner_ids = array();
+            foreach ($instances as $instance) {
+                $owner_instance = $owner_instance_dao->getByInstance($instance->id);
+                if (count($owner_instance) && !in_array($owner_instance[0]->owner_id, $owner_ids)) {
+                    $owner_ids[] = $owner_instance[0]->owner_id;
+                }
+            }
+
+            $owners = array();
+            foreach ($owner_ids as $owner_id) {
+                $owners[] = $owner_dao->getById($owner_id);
+            }
+
             $last_daily = isset($options['last_daily_email']) ? $options['last_daily_email']->option_value : null;
-            if ($last_daily != $today && in_array($current_owner->notification_frequency, array('daily','both'))) {
+            if ($last_daily != $today) {
                 if ($last_daily === null) {
                     $plugin_option_dao->insertOption($plugin_id, 'last_daily_email', $today);
                 } else {
                     $plugin_option_dao->updateOption($plugin_id, 'last_daily_email', $today);
                 }
-                $this->sendDailyDigest($current_owner);
+                foreach ($owners as $owner) {
+                    if ($this->sendDailyDigest($owner)) {
+                        $logger->logUserSuccess("Mailed daily digest to ".$owner->email.".", __METHOD__.','.__LINE__);
+                    }
+                }
             }
 
             $last_weekly = isset($options['last_weekly_email']) ? $options['last_weekly_email']->option_value : null;
-            if ($last_weekly != $today && date('w', $this->current_timestamp) == self::WEEKLY_DIGEST_DAY_OF_WEEK
-            && in_array($current_owner->notification_frequency, array('weekly','both'))) {
+            if ($last_weekly != $today && date('w', $this->current_timestamp) == self::WEEKLY_DIGEST_DAY_OF_WEEK) {
                 if ($last_weekly === null) {
                     $plugin_option_dao->insertOption($plugin_id, 'last_weekly_email', $today);
                 } else {
                     $plugin_option_dao->updateOption($plugin_id, 'last_weekly_email', $today);
                 }
-                $this->sendWeeklyDigest($current_owner);
+                foreach ($owners as $owner) {
+                    if ($this->sendWeeklyDigest($owner)) {
+                        $logger->logUserSuccess("Mailed weekly digest to ".$owner->email.".", __METHOD__.','.__LINE__);
+                    }
+                }
             }
         }
     }
@@ -133,7 +161,12 @@ class InsightsGeneratorPlugin extends Plugin implements CrawlerPlugin {
      * return boolean Whether email was sent
      */
     private function sendDailyDigest($owner) {
-        return $this->sendDigestSinceWithTemplate($owner, 'Yesterday 4am', '_email.daily_insight_digest.tpl');
+        if (in_array($owner->notification_frequency, array('both','daily'))) {
+            return $this->sendDigestSinceWithTemplate($owner, 'Yesterday 4am', '_email.daily_insight_digest.tpl');
+        } else {
+            return false;
+        }
+
     }
 
     /*
@@ -142,7 +175,11 @@ class InsightsGeneratorPlugin extends Plugin implements CrawlerPlugin {
      * return boolean Whether email was sent
      */
     private function sendWeeklyDigest($owner) {
-        return $this->sendDigestSinceWithTemplate($owner, '1 week ago 4am', '_email.weekly_insight_digest.tpl');
+        if (in_array($owner->notification_frequency, array('both','weekly'))) {
+            return $this->sendDigestSinceWithTemplate($owner, '1 week ago 4am', '_email.weekly_insight_digest.tpl');
+        } else {
+            return false;
+        }
     }
 
     /*
