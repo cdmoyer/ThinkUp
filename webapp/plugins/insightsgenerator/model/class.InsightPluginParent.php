@@ -172,6 +172,39 @@ class InsightPluginParent {
         return $run;
     }
 
+    /**
+     * Take an array of arrays, pick one (at random) and process each value in the array
+     * Text is processed with InsightTerms::getProcessedText()
+     * The normal usage would be to pass an array of Insight fields, such as text, headline, etc.
+     *
+     * @param array $options Array of possible copy "sets"
+     * @param array $params Extra parameters for text replacement passed to getProccessedText()
+     * @return array The chosen and processed array
+     */
+    public function getVariableCopyArray($options, $params = array()) {
+        $params['username'] = $this->username;
+        $choice = $options[TimeHelper::getTime() % count($options)];
+        foreach ($choice as $key => $val) {
+            $choice[$key] =  $this->terms->getProcessedText($choice[$key], $params);
+        }
+        return $choice;
+    }
+
+    /**
+     * Take an array of string, pick one (at random) and process the text
+     * Text is processed with InsightTerms::getProcessedText()
+     * The normal usage would be to pass a string for an Insight fields, such as text, headline, etc.
+     *
+     * @param array $options Array of possible copy
+     * @param array $params Extra parameters for text replacement passed to getProccessedText()
+     * @return str The chosen and processed array
+     */
+    public function getVariableCopy($options, $params = array()) {
+        $params['username'] = $this->username;
+        $choice = $options[TimeHelper::getTime() % count($options)];
+        return $this->terms->getProcessedText($choice, $params);
+    }
+
     public function renderConfiguration($owner) {
     }
 
