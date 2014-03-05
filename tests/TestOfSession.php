@@ -33,15 +33,12 @@ require_once THINKUP_WEBAPP_PATH.'config.inc.php';
 
 
 class TestOfSession extends ThinkUpUnitTestCase {
-    var $builder1;
-    var $builder2;
-    var $builder3;
-
     public function setUp(){
         parent::setUp();
     }
 
     public function tearDown() {
+        $this->builders = null;
         parent::tearDown();
     }
 
@@ -64,8 +61,9 @@ class TestOfSession extends ThinkUpUnitTestCase {
     }
 
     public function testIsLoggedInCookie() {
-        $this->builders[] = $this->buildData();
         $email = 'me@example.com';
+        $this->builders[] = FixtureBuilder::build('owners', array('email' => $email));
+
         $this->assertFalse(Session::isLoggedIn());
 
         $cookie_dao = DAOFactory::getDAO('CookieDAO');
@@ -74,7 +72,6 @@ class TestOfSession extends ThinkUpUnitTestCase {
         $_COOKIE[Session::COOKIENAME] = $cookie;
         $this->assertTrue(Session::isLoggedIn());
         $this->assertEqual(Session::getLoggedInUser(), 'me@example.com');
-
     }
 
     public function testIsNotAdmin() {
@@ -102,6 +99,16 @@ class TestOfSession extends ThinkUpUnitTestCase {
         $val["is_activated"] = 1;
         $val["failed_logins"] = 0;
         $val["account_status"] = '';
+        $val["timezone"] = 'America/New_York';
+        $val["joined"] = date('Y-m-d');
+        $val["api_key"] = '';
+        $val["api_key_private"] = '';
+        $val["email_notification_frequency"] = 'daily';
+        $val["membership_level"] = 0;
+
+        $cookie_dao = DAOFactory::getDAO('CookieDAO');
+        $deleted = $cookie_dao->deleteByEmail($email);
+        $this->assertFalse($deleted);
 
         $cookie_dao = DAOFactory::getDAO('CookieDAO');
         $deleted = $cookie_dao->deleteByEmail($email);
@@ -133,6 +140,12 @@ class TestOfSession extends ThinkUpUnitTestCase {
         $val["is_activated"] = 1;
         $val["failed_logins"] = 0;
         $val["account_status"] = '';
+        $val["timezone"] = 'America/New_York';
+        $val["joined"] = date('Y-m-d');
+        $val["api_key"] = '';
+        $val["api_key_private"] = '';
+        $val["email_notification_frequency"] = 'daily';
+        $val["membership_level"] = 0;
         $owner = new Owner($val);
         $session = new Session();
         $this->assertNull($session->getCSRFToken());
@@ -151,6 +164,12 @@ class TestOfSession extends ThinkUpUnitTestCase {
         $val["is_activated"] = 1;
         $val["failed_logins"] = 0;
         $val["account_status"] = '';
+        $val["timezone"] = 'America/New_York';
+        $val["joined"] = date('Y-m-d');
+        $val["api_key"] = '';
+        $val["api_key_private"] = '';
+        $val["email_notification_frequency"] = 'daily';
+        $val["membership_level"] = 0;
 
         $owner = new Owner($val);
 
@@ -169,6 +188,12 @@ class TestOfSession extends ThinkUpUnitTestCase {
         $val["is_activated"] = 1;
         $val["failed_logins"] = 0;
         $val["account_status"] = '';
+        $val["timezone"] = 'America/New_York';
+        $val["joined"] = date('Y-m-d');
+        $val["api_key"] = '';
+        $val["api_key_private"] = '';
+        $val["email_notification_frequency"] = 'daily';
+        $val["membership_level"] = 0;
 
         $owner = new Owner($val);
         $session->completeLogin($owner);
@@ -178,7 +203,10 @@ class TestOfSession extends ThinkUpUnitTestCase {
     }
 
     public function testLogOut() {
+<<<<<<< HEAD
         error_reporting(E_ALL); ini_set('display_errors', 1);
+=======
+>>>>>>> 5d87eeab730b749cce29b972c7715b73e14ca62c
         $email = 'me@example.com';
         $cookie_dao = DAOFactory::getDAO('CookieDAO');
         $cookie = $cookie_dao->generateForEmail($email);
@@ -196,6 +224,7 @@ class TestOfSession extends ThinkUpUnitTestCase {
         $this->assertFalse(Session::isLoggedIn());
         $this->assertFalse(Session::isAdmin());
         $this->assertNull(Session::getLoggedInUser());
+<<<<<<< HEAD
 
         $test_email = $cookie_dao->getEmailByCookie($cookie);
         $this->assertNull($test_email);
@@ -210,5 +239,10 @@ class TestOfSession extends ThinkUpUnitTestCase {
         ));
 
         return array($owner_builder);
+=======
+
+        $test_email = $cookie_dao->getEmailByCookie($cookie);
+        $this->assertNull($test_email);
+>>>>>>> 5d87eeab730b749cce29b972c7715b73e14ca62c
     }
 }
