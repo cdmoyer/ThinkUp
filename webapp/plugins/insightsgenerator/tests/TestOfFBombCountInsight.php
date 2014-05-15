@@ -256,6 +256,9 @@ class TestOfFBombCountInsight extends ThinkUpInsightUnitTestCase {
         $post_builders[] = FixtureBuilder::build('posts', array(
             'author_username'=> 'testy', 'network' => 'twitter', 'in_reply_to_post_id' => 1234,
             'post_text' => 'Fuck that.', 'pub_date' => date('Y-m-d')));
+        $post_builders[] = FixtureBuilder::build('links',array(
+            'post_key' => 1, 'image_src' => 'http://lolandguess.inarow.net/l/a/6/84a7e64e5a291c64eaf1f7c4f76bed.gif'
+        ));
         $insight_plugin = new FBombCountInsight();
         $insight_plugin->generateInsight($this->instance, $posts, 3);
 
