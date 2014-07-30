@@ -102,6 +102,12 @@ class LocationAwarenessInsight extends InsightPluginParent implements InsightPlu
             . " to a total of $located_posts ".$this->terms->getNoun('post', InsightTerms::PLURAL)
             . ". That's roughly $time during which ".$this->username." could be found in person.";
         $insight->filename = basename(__FILE__, ".php");
+        $insight->setHeroImage(array(
+                'url' => 'https://www.thinkup.com/assets/images/insights/2014-07/pushpin.jpg',
+                'alt_text' => 'You are here.',
+                'credit' => 'Photo: Appie Verschoor',
+                'img_link' => 'https://www.flickr.com/photos/xiffy/6768438411'
+        ));
         $this->insight_dao->insertInsight($insight);
     }
 
@@ -133,6 +139,12 @@ class LocationAwarenessInsight extends InsightPluginParent implements InsightPlu
         $insight->text = "Last month, ".$this->username." attached a precise location to $located_posts "
             . $this->terms->getNoun('post', $located_posts == 1 ? InsightTerms::SINGULAR : InsightTerms::PLURAL)
             . ". That's roughly $time during which ".$this->username." could be found in person.";
+        $insight->setHeroImage(array(
+                'url' => 'https://www.thinkup.com/assets/images/insights/2014-07/pushpin.jpg',
+                'alt_text' => 'You are here.',
+                'credit' => 'Photo: Appie Verschoor',
+                'img_link' => 'https://www.flickr.com/photos/xiffy/6768438411'
+        ));
         $insight->filename = basename(__FILE__, ".php");
         $this->insight_dao->insertInsight($insight);
     }
